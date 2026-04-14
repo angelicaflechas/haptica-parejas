@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juego de Parejas · Háptica</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --teal-dark: #003237;
+    --teal-mid: #006663;
+    --mint: #00BCA0;
+    --orange: #FA4616;
+    --white: #F5F2EC;
+    --card-bg: #004a50;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--teal-dark);
+    color: var(--white);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+  }
+
+  .logo {
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--mint);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+
+  h1 {
+    font-size: clamp(28px, 6vw, 48px);
+    font-weight: 800;
+    color: var(--white);
+    text-align: center;
+    margin-bottom: 4px;
+    line-height: 1.1;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--mint);
+    text-align: center;
+    margin-bottom: 48px;
+    opacity: 0.8;
+    letter-spacing: 0.05em;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 32px;
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(0,188,160,0.15);
+  }
+
+  .card h2 {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--mint);
+    margin-bottom: 20px;
+    opacity: 0.8;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  input {
+    flex: 1;
+    background: var(--teal-dark);
+    border: 1.5px solid rgba(0,188,160,0.3);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: var(--white);
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input::placeholder { color: rgba(245,242,236,0.2); font-size: 16px; }
+  input:focus { border-color: var(--mint); }
+
+  button {
+    background: var(--orange);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 24px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  button:hover { opacity: 0.85; }
+  button:active { transform: scale(0.97); }
+
+  .result-box {
+    margin-top: 24px;
+    padding: 24px;
+    border-radius: 14px;
+    text-align: center;
+    display: none;
+    animation: pop 0.25s ease;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.95); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .result-box.success {
+    background: rgba(0,188,160,0.12);
+    border: 1.5px solid rgba(0,188,160,0.4);
+    display: block;
+  }
+
+  .result-box.error {
+    background: rgba(250,70,22,0.12);
+    border: 1.5px solid rgba(250,70,22,0.4);
+    display: block;
+  }
+
+  .result-label {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+
+  .result-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 48px;
+    font-weight: 500;
+    color: var(--mint);
+    line-height: 1;
+  }
+
+  .result-box.error .result-value { color: var(--orange); }
+
+  .result-desc {
+    font-size: 13px;
+    margin-top: 8px;
+    opacity: 0.6;
+  }
+
+  .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .ref-grid::-webkit-scrollbar { width: 4px; }
+  .ref-grid::-webkit-scrollbar-track { background: transparent; }
+  .ref-grid::-webkit-scrollbar-thumb { background: var(--mint); border-radius: 4px; opacity: 0.3; }
+
+  .ref-item {
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 6px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+  }
+
+  .ref-num { color: var(--orange); }
+  .ref-let { color: var(--mint); }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1.5px solid rgba(0,188,160,0.2);
+    background: transparent;
+    color: var(--white);
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .tab.active {
+    background: rgba(0,188,160,0.15);
+    border-color: var(--mint);
+    opacity: 1;
+    color: var(--mint);
+  }
+
+  .mode { display: none; }
+  .mode.active { display: block; }
+
+  .hint {
+    font-size: 11px;
+    color: var(--mint);
+    opacity: 0.5;
+    text-align: center;
+    margin-top: 12px;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+
+<div class="logo">Háptica · Legal Design</div>
+<h1>Juego de<br>Parejas</h1>
+<p class="subtitle">Verificador de correspondencias</p>
+
+<div class="card">
+  <div class="tabs">
+    <button class="tab active" onclick="switchMode('num')">Número → Letra</button>
+    <button class="tab" onclick="switchMode('let')">Letra → Número</button>
+  </div>
+
+  <!-- Modo número a letra -->
+  <div class="mode active" id="mode-num">
+    <div class="input-row">
+      <input type="number" id="input-num" placeholder="Ej: 78" min="1" max="92"
+        onkeydown="if(event.key==='Enter') calcFromNum()">
+      <button onclick="calcFromNum()">Buscar</button>
+    </div>
+    <div class="result-box" id="result-num">
+      <div class="result-label">La letra que corresponde es</div>
+      <div class="result-value" id="val-num"></div>
+      <div class="result-desc" id="desc-num"></div>
+    </div>
+  </div>
+
+  <!-- Modo letra a número -->
+  <div class="mode" id="mode-let">
+    <div class="input-row">
+      <input type="text" id="input-let" placeholder="Ej: BW" maxlength="2"
+        onkeydown="if(event.key==='Enter') calcFromLet()"
+        oninput="this.value=this.value.toUpperCase()">
+      <button onclick="calcFromLet()">Buscar</button>
+    </div>
+    <div class="result-box" id="result-let">
+      <div class="result-label">El número que corresponde es</div>
+      <div class="result-value" id="val-let"></div>
+      <div class="result-desc" id="desc-let"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Tabla de referencia</h2>
+  <div class="ref-grid" id="ref-grid"></div>
+</div>
+
+<p class="hint">Alfabeto con Ñ · 27 letras · 92 tarjetas</p>
+
+<script>
+  const ALPHA = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','Ñ','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+  const N = 27;
+  const MAX = 92;
+
+  function normalizeNh(s) {
+    return s.toUpperCase().trim().replace(/N[~+]/g, 'Ñ');
+  }
+
+  function numToLet(n) {
+    if (n < 1 || n > MAX) return null;
+    if (n <= N) return ALPHA[n - 1];
+    const idx = n - N - 1;
+    const first = Math.floor(idx / N);
+    const second = idx % N;
+    return ALPHA[first] + ALPHA[second];
+  }
+
+  function letToNum(s) {
+    s = normalizeNh(s);
+    if (s.length === 1) {
+      const i = ALPHA.indexOf(s);
+      if (i === -1) return null;
+      return i + 1;
+    }
+    if (s.length === 2) {
+      const first = ALPHA.indexOf(s[0]);
+      const second = ALPHA.indexOf(s[1]);
+      if (first === -1 || second === -1) return null;
+      const n = N + first * N + second + 1;
+      return n > MAX ? null : n;
+    }
+    return null;
+  }
+
+  function switchMode(mode) {
+    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (mode==='num'&&i===0)||(mode==='let'&&i===1)));
+    document.getElementById('mode-num').classList.toggle('active', mode==='num');
+    document.getElementById('mode-let').classList.toggle('active', mode==='let');
+  }
+
+  function calcFromNum() {
+    const val = parseInt(document.getElementById('input-num').value);
+    const box = document.getElementById('result-num');
+    const valEl = document.getElementById('val-num');
+    const desc = document.getElementById('desc-num');
+    box.className = 'result-box';
+
+    if (isNaN(val) || val < 1 || val > MAX) {
+      valEl.textContent = '—';
+      desc.textContent = 'Ingresa un número entre 1 y 92';
+      box.classList.add('error');
+      return;
+    }
+
+    const letra = numToLet(val);
+    valEl.textContent = letra;
+    desc.textContent = `Tarjeta #${val}`;
+    box.classList.add('success');
+  }
+
+  function calcFromLet() {
+    const val = normalizeNh(document.getElementById('input-let').value);
+    const box = document.getElementById('result-let');
+    const valEl = document.getElementById('val-let');
+    const desc = document.getElementById('desc-let');
+    box.className = 'result-box';
+
+    if (!val) {
+      valEl.textContent = '—';
+      desc.textContent = 'Ingresa una letra o combinación';
+      box.classList.add('error');
+      return;
+    }
+
+    const num = letToNum(val);
+    if (!num) {
+      valEl.textContent = '?';
+      desc.textContent = `"${val}" no existe en el juego`;
+      box.classList.add('error');
+      return;
+    }
+
+    valEl.textContent = num;
+    desc.textContent = `Tarjeta "${val}"`;
+    box.classList.add('success');
+  }
+
+  // Tabla de referencia
+  const grid = document.getElementById('ref-grid');
+  for (let i = 1; i <= MAX; i++) {
+    const item = document.createElement('div');
+    item.className = 'ref-item';
+    item.innerHTML = `<span class="ref-num">${i}</span><span class="ref-let">${numToLet(i)}</span>`;
+    grid.appendChild(item);
+  }
+</script>
+</body>
+</html>
